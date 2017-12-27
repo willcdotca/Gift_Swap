@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gift Swap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            margin-bottom: 150px
+        }
+
+        #controls {
+            position: fixed;
+            width: 83vw;
+            bottom: 2rem;
+            margin-top: 15vh;
+            margin-left: -6vw;
+            background: rgba(255, 255, 255, 0.6);
+            z-index: 1000;
+            padding: 15px;
+            box-shadow: 0 8px 9px rgba(0, 0, 0, 0.4);
+        }
+
+        ul.collection {
+            overflow: visible;
+            margin: 0;
+            border: none;
+            transition: height 1s ease;
+            /*display:flex;*/
+            /*align-content: flex-start;*/
+            /*justify-content: flex-start;*/
+
+        }
+
+        li {
+            text-transform: capitalize;
+            height: 32vh;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            padding: 2px !important;
+
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+
+        }
+
+        li span {
+            width: 100%;
+
+            position: absolute;
+            bottom: 10px;
+            font-size: 2rem;
+
+            left: 0;
+        }
+
+        li i {
+
+            justify-content: center;
+            align-self: center;
+
+        }
+
+        li i:first-child {
+            left: 0;
+            top: 0;
+
+        }
+
+        li.growUp {
+            animation: growUp 1s normal forwards linear;
+            display: flex;
+
+        }
+
+        @keyframes growUp {
+            0% {
+                opacity: 0;
+                transform: scaleX(-1) translate3d(0, 100px, 0);
+            }
+            50% {
+                opacity: 0;
+                transform: scaleX(0) translate3d(0, -100px, 0)
+            }
+            100% {
+                left: 0;
+                opacity: 1;
+                transform: scaleX(1) translate3d(0, 0, 0);
+
+            }
+
+        }
+
+        li.flipped {
+            animation: flipped 2s forwards normal linear;
+        }
+
+        @keyframes flipped {
+            0% {
+                transform: scaleX(-1);
+            }
+            100% {
+                transform: scaleX(1);
+            }
+
+        }
+
+        div.spaced {
+            margin: 10px;
+            height: 100%;
+            width: 100%;
+            position: relative;
+            background: #efefef;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+
+        }
+
+        .listBlocker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 100%;
+            z-index: 200;
+            background: transparent;
+            display: none;
+        }
+
+        #nameList {
+            position: relative;
+        }
+
+        i.card {
+            margin: 46% 0 0 0;
+            font-size: 3rem;
+            background: #efefef;
+            color: white;
+            border: 10px solid white;
+            border-radius: 100px;
+            padding: 8px;
+
+        }
+
+        li.active div.spaced {
+            background: lightgreen !important;
+            color: darkgreen !important;
+            box-shadow: 0 2px 2px black;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+        }
+
+        .ability {
+            position: absolute;
+            top: 25px;
+            margin: auto;
+            width: 100%;
+            left: 0;
+
+        }
+
+        .able strong, .able i {
+            opacity: 0
+        }
+    </style>
+</head>
+<body>
+
+
+<div class="container">
+    <div class="row" id="nameList">
+
+        <div id="controls">
+            <div class="s12">
+                <input type="text" name="name" id="name" placeholder="Santa" autocomplete="off">
+                <button id="add" class="add waves-effect waves-light btn green darker-2" type="button" name="start">
+                    <i class="material-icons left">person_add</i>
+                    Add Name
+                </button>
+                <button id="start" class="start waves-effect waves-light btn red" type="button" name="start" disabled>
+                    <i class="material-icons left">timelapse</i>
+                    <span>Start</span>
+                </button>
+                <button id="options" class="options waves-effect waves-light btn blue lighten-1" type="button"
+                        name="start">
+                    <i class="material-icons left">blur_on</i>
+                    Cards <span>Enabled</span>
+                </button>
+            </div>
+        </div>
+        <div class="s12 col">
+            <div class="listBlocker"></div>
+            <h1>Gift Swap</h1>
+            <p>Gift exchange made simple with a twist! Add the names and select whether bonus cards are available. When
+                the list is complete click start</p>
+            <ul class="row center-align" id="names">
+                <li class="addNames col s2">
+                    There is no one in this list. Add someone below.
+                </li>
+            </ul>
+        </div>
+    </div>
+
+
+</div>
+<script>
+
+  //    Future versions
+
+  let myName = localStorage.getItem('name')
+  let hostName = ''
+  let names = new Map()
+  let abilities = []
+  let counterTimeout
+  let cardList = {
+//    Trade with two people
+    'swap once': 'autorenew',
+    'swap twice': 'autorenew',
+    'swap thrice': 'autorenew',
+// everyone swaps gifts to the left
+    'all swap left 1': 'arrow_back',
+    'all swap left 2': 'arrow_back',
+    'all swap left 3': 'arrow_back',
+// Everyone swaps gifts to the right twice
+    'all swap right 1': 'arrow_forward',
+    'all swap right 2': 'arrow_forward',
+    'all swap right 3': 'arrow_forward',
+// Choice
+    'trump card': 'hdr_strong',
+// Don't swap
+    'muted': 'volume_off',
+//    Last pick
+    'last pick': 'autorenew'
+
+  }
+  let cardsEnabled = true
+  let room = {}
+
+  let listBlocker = document.querySelector('.listBlocker')
+  let input = document.querySelector('input')
+  let nameList = document.getElementById('names')
+  let first = document.querySelector('.addNames')
+
+  let cardToggle = document.querySelector('.options i')
+  let optionSpan = document.querySelector('.options span')
+  cardToggle.parentNode.onclick = async () => {
+    if (cardToggle.innerText === 'blur_on') {
+      cardsEnabled = false
+      cardToggle.innerText = 'blur_off'
+      optionSpan.innerText = 'Disabled'
+      cardToggle.parentNode.classList.remove('enabled', 'red', 'darker-1')
+      cardToggle.parentNode.classList.add('grey')
+      await readOut('Cards Disabled')
+    } else {
+      cardToggle.innerText = 'blur_on'
+      optionSpan.innerText = 'Enabled'
+      cardToggle.parentNode.classList.add('enabled', 'red', 'darker-1')
+      cardToggle.parentNode.classList.remove('grey')
+      cardsEnabled = true
+      await readOut('Cards Enabled')
+    }
+  }
+
+  //  Add Player
+  let addName = document.querySelector('button.add')
+  addName.onclick = async () => {
+    let inputValue = input.value.toString().toLowerCase().trim()
+    if (inputValue.length) {
+      if (names.get(inputValue) === undefined) {
+        nameList.append(await listFactory(inputValue))
+        names.set(inputValue, {name: inputValue, ability: '', gamble: false})
+        await readOut(inputValue + ' has joined the list')
+        if (!hostName.length) hostName = inputValue
+        if (first) first.remove()
+        localStorage.setItem('name', inputValue)
+        myName = localStorage.getItem('name')
+        ws.send(inputValue)
+      }
+      console.log('name', myName)
+//      if (myName.length) addName.disabled = true
+      if (names.size >= 2) start.parentNode.disabled = false
+      input.value = ''
+      input.focus()
+
+    }
+  }
+
+  //  Disable Button/Input
+  toggleDisable = async (el) => {
+    return !el.disabled
+  }
+
+  //  Start Game
+  let start = document.querySelector('.start span')
+  start.parentNode.onclick = async () => {
+    if (start.innerText.toLowerCase() === 'start') {
+      start.innerText = 'Pause'
+      if (cardsEnabled) await randomAbility()
+      await readOut('Game Started')
+      await toggleDisable(addName)
+      await toggleDisable(cardToggle.parentNode)
+      await startingGame()
+    }
+    else {
+      start.innerText = 'Start'
+      listBlocker.style.display = 'none'
+      await readOut('Game Paused')
+      await toggleDisable(addName)
+      await toggleDisable(cardToggle.parentNode)
+      clearInterval(counterTimeout)
+    }
+  }
+
+  //  Icons
+  const createCard = async (icon) => {
+    let card = document.createElement('i')
+    card.innerHTML = icon || 'beenhere'
+    card.classList.add('card', 'material-icons')
+    return card
+  }
+  const removeCard = async (el) => {
+    if (el.querySelector('i')) el.querySelector('i').remove()
+  }
+
+  //  Card
+  const listFactory = async (name, html, elClass, appendIcon, appendTo) => {
+    let li = document.createElement('li')
+    li.innerHTML = (html && html.length) ? html : `<div class="spaced col s12"><span>${name}</span></div>`
+    li.classList.remove('active')
+    li.classList.add('col', 's2')
+    li.ondblclick = async (e) => {
+      names.delete(myName)
+      li.parentNode.removeChild(li)
+      if (!names.size) nameList.append(first)
+      return false
+    }
+    li.onclick = async () => {
+      if (li.classList.contains('able')) { li.classList.remove('able') }
+      else if (!li.classList.contains('shuffled')) {
+        if (cardsEnabled && !li.classList.contains('active')) {
+          li.classList.add('active')
+          li.querySelector('.spaced').append(await createCard('stars'))
+          let betterLuck = names.get(name)
+          betterLuck.gamble = true
+          names.set(name, betterLuck)
+          myName = name
+        }
+        else {
+          if (cardsEnabled) {
+            li.classList.remove('active')
+            li.innerHTML = `<div class="spaced col s12"><span>${name}</span></div>`
+            await removeCard(li)
+            names.set(name, {name: name, ability: '', gamble: false})
+          }
+        }
+      }
+
+    }
+    if (typeof(elClass) === 'object') { elClass.forEach(e => { li.classList.add(e) }) }
+    else { if (elClass) li.classList.add(elClass) }
+    if (appendIcon) li.querySelector('.spaced').append(await appendIcon)
+    if (appendTo) appendTo.append(li)
+    li.classList.add('growUp')
+    return li
+  }
+
+  // Speech Synthesis
+  const readOut = async (text) => {
+    let utterThis = new SpeechSynthesisUtterance(text)
+    window.speechSynthesis.speak(utterThis)
+    input.blur()
+  }
+
+//  Generate Abilities
+  const randomAbility = async () => {
+    let temp = abilities
+    for (const [key, value] of names.entries()) {
+      let newValue = value
+      if (newValue.gamble) newValue.ability = await assignAbilities(temp)
+      names[key] = newValue
+    }
+    abilities = []
+    for (let card of Object.entries(cardList)) {
+      abilities.push(card)
+    }
+  }
+
+//  Assign Abilities
+  const assignAbilities = async (list) => {
+    let byteArray = new Uint8Array(1)
+    window.crypto.getRandomValues(byteArray)
+    let randomNum = '0.' + byteArray[0].toString()
+    let item = list.splice(Math.floor(randomNum * list.length), 1)
+
+    if (item.length) return item
+  }
+
+  //  Initialize Program
+  const init = async () => {
+    for (let card of Object.entries(cardList)) { abilities.push(card) }
+    await toggleDisable(start.parentNode)
+    document.querySelector('li:first-child').classList.add('growUp')
+  }
+
+//  Start Game
+  const startingGame = async (prev) => {
+    nameList.innerHTML = ''
+    let players = prev || [...names]
+    counterTimeout = await setInterval(async () => {
+      if (!players.length) clearInterval(counterTimeout)
+      await shufflePlayer(await assignAbilities(players))
+    }, 1000)
+    addName.disabled = true
+  }
+
+//  Shuffle Players
+  const shufflePlayer = async (player) => {
+    if (!player) return
+    player = player[0][1]
+    if (cardsEnabled && player.ability) {
+      await listFactory(player.name,
+        `<div class="spaced col s12"><strong class="ability">${player.ability[0][0]}</strong><span class="name">${player.name}</span></div>`, ['active', 'able', 'shuffled'], createCard(player.ability[0][1]), nameList)
+      return
+    }
+    await listFactory(player.name, `<div class="spaced col s12"><span>${ player.name}</span></div>`, false, false, nameList)
+  }
+
+  init().then()
+
+  //    Websocket
+
+  if ('WebSocket' in window) {
+//    alert("WebSocket is supported by your Browser!");
+
+    // Let us open a web socket
+    var ws = new WebSocket('ws://localhost:1337')
+
+    ws.onopen = function () {
+      // Web Socket is connected, send data using send()
+      if (!hostName && localStorage.getItem('room') === undefined) room.host = myName
+
+      ws.send({host: myName, joined: names, joining: myName})
+
+    }
+
+    ws.onmessage = async (evt) => {
+      console.log(evt.data)
+      if (hostName === myName) {
+//        alert('hosting')
+      } else {
+//        alert('joining')
+      }
+
+    }
+
+    ws.onclose = function () {
+      // websocket is closed.
+//      alert("Connection is closed...");
+    }
+
+    window.onbeforeunload = function (event) {
+      socket.close()
+    }
+
+  }
+  else {
+    // The browser doesn't support WebSocket
+    alert('WebSocket NOT supported by your Browser!')
+  }
+
+
+</script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.js"></script>
+
+</body>
+</html>
