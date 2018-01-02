@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Random Number Card Counter For Boardgame</title>
+    <style>
+        button {
+            height: 96vh;
+            width: 48vw;
+            margin: 2vh 1vw;
+            position: absolute;
+            top: 0;
+            left: 0;
+            text-transform: capitalize;
+        }
+
+        button:first-child {
+            left: 50vw;
+        }
+
+    </style>
+</head>
+<body>
+<button id="good">Click to Set Quantity of Good Cards</button>
+<button id="bad">0</button>
+<script>
+
+  let cards = {
+    good: {total: 0, list: []},
+    bad: {total: 0, list: []}
+  }
+
+  function createRange (N) {
+    return (Array.from(Array(parseInt(N)).keys()))
+  }
+
+  document.querySelectorAll('button').forEach(e => {
+    let id = e.getAttribute('id')
+    let side = cards[id]
+    let total
+    e.innerHTML = 'Click to set maximum quantity for ' + id + ' cards.'
+    e.onclick = function () {
+      if (!side.total) {
+        side.total = prompt('Maximum quantity for ' + id + ' cards')
+        side.list = createRange(side.total)
+      }
+      let a = getRandomInt(side);
+      (isNaN(a))
+        ? this.innerHTML = '<strong>Max Card Number</strong><br/>'
+        : this.innerHTML = '<strong>' + id + ' Card Number</strong><br/>' + a
+      console.log(side.list)
+
+    }
+  })
+
+  function getRandomInt (card) {
+    let getRandomNumber
+    let byteArray = new Uint8Array(1)
+    window.crypto.getRandomValues(byteArray)
+    let randomNum = '0.' + byteArray[0].toString()
+    getRandomNumber = Math.floor(randomNum * card.list.length)
+    return card.list.splice(getRandomNumber, 1)[0] + 1
+  }
+
+
+
+
+
+</script>
+</body>
+</html>
